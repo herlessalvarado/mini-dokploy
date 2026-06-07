@@ -1,11 +1,11 @@
-import { createDeploymentIdentity } from "@/server/services/deployment-identity";
-
 import { desc } from "drizzle-orm";
 import { z } from "zod";
 
 import { publicProcedure, router } from "../trpc";
 import { db } from "@/server/db";
 import { deployments } from "@/server/db/schema";
+import { createDeploymentIdentity } from "@/server/services/deployment-identity";
+import { runDeploymentJob } from "@/server/services/deployment";
 
 const customLabelSchema = z.object({
   key: z.string().min(1),
@@ -55,6 +55,8 @@ export const deploymentsRouter = router({
           updatedAt: now,
         })
         .returning();
+
+      void runDeploymentJob(deployment.id);
 
       return deployment;
     }),

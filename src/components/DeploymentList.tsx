@@ -43,7 +43,9 @@ export function DeploymentList() {
               {deploymentsQuery.data.map((deployment) => (
                 <tr key={deployment.id}>
                   <td style={tdStyle}>{deployment.name}</td>
-                  <td style={tdStyle}>{deployment.status}</td>
+                  <td style={tdStyle}>
+                    <strong>{deployment.status}</strong>
+                  </td>
                   <td style={tdStyle}>
                     <a
                       href={`http://${deployment.domain}`}
