@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { createDeploymentIdentity } from "@/server/services/deployment-identity";
 
 import { desc } from "drizzle-orm";
 import { z } from "zod";
@@ -33,27 +33,21 @@ export const deploymentsRouter = router({
   create: publicProcedure
     .input(createDeploymentSchema)
     .mutation(async ({ input }) => {
-      const id = randomUUID();
-      const shortId = id.slice(0, 8);
-
-      const name = `app-${shortId}`;
-      const serviceName = `mini-dokploy-${shortId}`;
-      const imageTag = `mini-dokploy/${shortId}:${Date.now()}`;
-      const domain = `app-${shortId}.127.0.0.1.sslip.io`;
+      const identity = createDeploymentIdentity();
 
       const now = new Date();
 
       const [deployment] = await db
         .insert(deployments)
         .values({
-          id,
-          name,
+          id: identity.id,
+          name: identity.name,
           repoUrl: input.repoUrl,
           dockerfilePath: input.dockerfilePath,
           exposedPort: input.exposedPort,
-          imageTag,
-          serviceName,
-          domain,
+          imageTag: identity.imageTag,
+          serviceName: identity.serviceName,
+          domain: identity.domain,
           status: "building",
           customLabelsJson: JSON.stringify(input.customLabels),
           errorMessage: null,
