@@ -51,12 +51,12 @@ export async function removeDockerService(serviceName: string) {
   await runCommand("docker", ["service", "rm", serviceName]);
 }
 
-export async function inspectDockerService(serviceName: string) {
-  return runCommand("docker", ["service", "inspect", serviceName]);
-}
-
 export async function removeDockerServiceIfExists(serviceName: string) {
   try {
     await removeDockerService(serviceName);
   } catch {}
+}
+
+export async function inspectDockerService(serviceName: string) {
+  return runCommand("docker", ["service", "inspect", serviceName]);
 }

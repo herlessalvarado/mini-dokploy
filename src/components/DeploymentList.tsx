@@ -1,8 +1,22 @@
 import { trpc } from "@/utils/trpc";
 
 export function DeploymentList() {
+  const utils = trpc.useUtils();
+
   const deploymentsQuery = trpc.deployments.list.useQuery(undefined, {
     refetchInterval: 3000,
+  });
+
+  const redeployMutation = trpc.deployments.redeploy.useMutation({
+    onSuccess: async () => {
+      await utils.deployments.list.invalidate();
+    },
+  });
+
+  const removeMutation = trpc.deployments.remove.useMutation({
+    onSuccess: async () => {
+      await utils.deployments.list.invalidate();
+    },
   });
 
   return (
@@ -12,8 +26,18 @@ export function DeploymentList() {
       {deploymentsQuery.isLoading && <p>Loading deployments...</p>}
 
       {deploymentsQuery.error && (
+        <p style={{ color: "red" }}>Error: {deploymentsQuery.error.message}</p>
+      )}
+
+      {redeployMutation.error && (
         <p style={{ color: "red" }}>
-          Error: {deploymentsQuery.error.message}
+          Redeploy error: {redeployMutation.error.message}
+        </p>
+      )}
+
+      {removeMutation.error && (
+        <p style={{ color: "red" }}>
+          Remove error: {removeMutation.error.message}
         </p>
       )}
 
@@ -36,38 +60,89 @@ export function DeploymentList() {
                 <th style={thStyle}>Repo</th>
                 <th style={thStyle}>Port</th>
                 <th style={thStyle}>Error</th>
+                <th style={thStyle}>Actions</th>
               </tr>
             </thead>
 
             <tbody>
-              {deploymentsQuery.data.map((deployment) => (
-                <tr key={deployment.id}>
-                  <td style={tdStyle}>{deployment.name}</td>
-                  <td style={tdStyle}>
-                    <strong>{deployment.status}</strong>
-                  </td>
-                  <td style={tdStyle}>
-                    <a
-                      href={`http://${deployment.domain}`}
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      {deployment.domain}
-                    </a>
-                  </td>
-                  <td style={tdStyle}>
-                    <span title={deployment.repoUrl}>
-                      {truncate(deployment.repoUrl, 32)}
-                    </span>
-                  </td>
-                  <td style={tdStyle}>{deployment.exposedPort}</td>
-                  <td style={tdStyle}>
-                    {deployment.errorMessage
-                      ? truncate(deployment.errorMessage, 40)
-                      : "-"}
-                  </td>
-                </tr>
-              ))}
+              {deploymentsQuery.data.map((deployment) => {
+                const isBuilding = deployment.status === "building";
+                const isRemoved = deployment.status === "removed";
+
+                return (
+                  <tr key={deployment.id}>
+                    <td style={tdStyle}>{deployment.name}</td>
+
+                    <td style={tdStyle}>
+                      <strong>{deployment.status}</strong>
+                    </td>
+
+                    <td style={tdStyle}>
+                      {isRemoved ? (
+                        <span>-</span>
+                      ) : (
+                        <a
+                          href={`http://${deployment.domain}`}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          {deployment.domain}
+                        </a>
+                      )}
+                    </td>
+
+                    <td style={tdStyle}>
+                      <span title={deployment.repoUrl}>
+                        {truncate(deployment.repoUrl, 32)}
+                      </span>
+                    </td>
+
+                    <td style={tdStyle}>{deployment.exposedPort}</td>
+
+                    <td style={tdStyle}>
+                      {deployment.errorMessage
+                        ? truncate(deployment.errorMessage, 40)
+                        : "-"}
+                    </td>
+
+                    <td style={tdStyle}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          disabled={
+                            isBuilding ||
+                            isRemoved ||
+                            redeployMutation.isPending
+                          }
+                          onClick={() =>
+                            redeployMutation.mutate({ id: deployment.id })
+                          }
+                        >
+                          Redeploy
+                        </button>
+
+                        <button
+                          type="button"
+                          disabled={
+                            isBuilding || isRemoved || removeMutation.isPending
+                          }
+                          onClick={() => {
+                            const confirmed = window.confirm(
+                              `Remove ${deployment.name}?`,
+                            );
+
+                            if (confirmed) {
+                              removeMutation.mutate({ id: deployment.id });
+                            }
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
