@@ -17,6 +17,10 @@ export function getTraefikLabels(params: {
       value: "true",
     },
     {
+      key: "traefik.swarm.network",
+      value: "dokploy-public",
+    },
+    {
       key: `traefik.http.routers.${routerName}.rule`,
       value: `Host(\`${params.domain}\`)`,
     },

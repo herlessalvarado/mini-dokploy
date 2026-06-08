@@ -1,0 +1,54 @@
+version: "3.8"
+
+services:
+  traefik:
+    image: traefik:v3.6.2
+    command:
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=DEBUG
+      - --providers.swarm=true
+      - --providers.swarm.endpoint=unix:///var/run/docker.sock
+      - --providers.swarm.exposedbydefault=false
+      - --providers.swarm.network=dokploy-public
+      - --entrypoints.web.address=:80
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - dokploy-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+  mini-dokploy:
+    image: mini-dokploy:local
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      DATABASE_URL: file:/app/data/db.sqlite
+      DOKPLOY_PUBLIC_NETWORK: dokploy-public
+      DOKPLOY_TMP_DIR: /tmp/mini-dokploy
+    ports:
+      - "3000:3000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - mini_dokploy_data:/app/data
+      - mini_dokploy_tmp:/tmp/mini-dokploy
+    networks:
+      - dokploy-public
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+
+networks:
+  dokploy-public:
+    external: true
+
+volumes:
+  mini_dokploy_data:
+  mini_dokploy_tmp:

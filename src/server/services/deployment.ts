@@ -5,7 +5,11 @@ import { eq } from "drizzle-orm";
 
 import { db } from "@/server/db";
 import { deployments } from "@/server/db/schema";
-import { buildDockerImage, createDockerService } from "./docker";
+import {
+  buildDockerImage,
+  createDockerService,
+  removeDockerServiceIfExists,
+} from "./docker";
 import { cloneRepository } from "./git";
 import {
   getTraefikLabels,
@@ -57,6 +61,8 @@ export async function runDeploymentJob(deploymentId: string) {
       customLabels,
       generatedLabels,
     });
+
+    await removeDockerServiceIfExists(deployment.serviceName);
 
     await createDockerService({
       serviceName: deployment.serviceName,

@@ -1,0 +1,8 @@
+node_modules
+.next
+.git
+data
+*.sqlite
+*.sqlite-journal
+.DS_Store
+.env
